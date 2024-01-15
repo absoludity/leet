@@ -33,7 +33,7 @@ impl Solution {
         let accumulated = heights.iter().enumerate().fold(
             Accumulator {
                 water: 0,
-                walls: Vec::new(),
+                walls: Vec::with_capacity(heights.len() / 2),
             },
             |mut acc, (pos, height)| {
                 // println!("acc={:?}", &acc);
