@@ -13,28 +13,26 @@ use std::collections::HashMap;
 // A left wall has a height and a bottom which is initially zero
 // but may be raised by a following wall that will take over tracking
 // lower trapped water.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 struct LeftWall {
+    pos: i32,
     height: i32,
     bottom: i32,
 }
-
-// The left-walls in the walls hashmap are indexed by their
-// position in the input array.
-type Walls = HashMap<i32, LeftWall>;
 
 // We could just use a tuple, but for clarity, define a
 // struct for the accumulator.
 #[derive(Debug)]
 struct Accumulator {
     water: i32,
-    walls: Walls,
+    walls: Vec<LeftWall>,
 }
+
 impl Accumulator {
     fn new() -> Self {
         Accumulator {
             water: 0,
-            walls: HashMap::new(),
+            walls: Vec::new(),
         }
     }
 }
@@ -61,10 +59,10 @@ impl Solution {
                     // to the new height (whether it's filled with water or a new
                     // left-wall has taken over tracking water at that level).
                     let mut water_collected = 0;
-                    let mut new_walls: Walls = acc
+                    let mut new_walls: Vec<LeftWall> = acc
                         .walls
                         .iter()
-                        .filter_map(|(&left_pos, left_wall)| {
+                        .filter_map(|left_wall| {
                             // Collect the water only for those left edges whose bottom extends to
                             // the heigth of this new wall.
                             //   |nn
@@ -72,7 +70,7 @@ impl Solution {
                             if left_wall.bottom < *height {
                                 water_collected += (left_wall.height.min(*height)
                                     - left_wall.bottom)
-                                    * ((pos as i32 - 1) - left_pos);
+                                    * ((pos as i32 - 1) - left_wall.pos);
                                 // println!("water collected after
                                 // {left_wall:?}: {water_collected}");
                             }
@@ -88,24 +86,20 @@ impl Solution {
                             // to the height of this new wall if it is higher than the current
                             // bottem, since the new wall will track the
                             // trapped water to that level.
-                            Some((
-                                left_pos,
-                                LeftWall {
-                                    height: left_wall.height,
-                                    bottom: left_wall.bottom.max(*height),
-                                },
-                            ))
+                            Some(LeftWall {
+                                pos: left_wall.pos,
+                                height: left_wall.height,
+                                bottom: left_wall.bottom.max(*height),
+                            })
                         })
                         .collect();
 
                     // Finally add the new left wall.
-                    new_walls.insert(
-                        pos as i32,
-                        LeftWall {
-                            height: *height,
-                            bottom: 0,
-                        },
-                    );
+                    new_walls.push(LeftWall {
+                        pos: pos as i32,
+                        height: *height,
+                        bottom: 0,
+                    });
 
                     Accumulator {
                         water: acc.water + water_collected,
