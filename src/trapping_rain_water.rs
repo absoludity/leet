@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 // Each water trap has a left and right wall. Since
 // we're scanning the wall heights from left to right,
 // we only need to track the left walls which can still
@@ -13,7 +11,7 @@ use std::collections::HashMap;
 // A left wall has a height and a bottom which is initially zero
 // but may be raised by a following wall that will take over tracking
 // lower trapped water.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct LeftWall {
     pos: i32,
     height: i32,
@@ -28,84 +26,67 @@ struct Accumulator {
     walls: Vec<LeftWall>,
 }
 
-impl Accumulator {
-    fn new() -> Self {
-        Accumulator {
-            water: 0,
-            walls: Vec::new(),
-        }
-    }
-}
-
 pub struct Solution(());
 
 impl Solution {
     pub fn trap(heights: &Vec<i32>) -> i32 {
-        let accumulated =
-            heights
-                .iter()
-                .enumerate()
-                .fold(Accumulator::new(), |acc, (pos, height)| {
-                    // println!("acc={:?}", &acc);
+        let accumulated = heights.iter().enumerate().fold(
+            Accumulator {
+                water: 0,
+                walls: Vec::new(),
+            },
+            |mut acc, (pos, height)| {
+                // println!("acc={:?}", &acc);
 
-                    // Guard against a zero height which doesn't change
-                    // our accumulator at all.
-                    if *height == 0 {
-                        return acc;
+                // Guard against a zero height which doesn't change
+                // our accumulator at all.
+                if *height == 0 {
+                    return acc;
+                }
+
+                // Next, sum the water collected by this current
+                // wall (if any), raising the existing left-wall bottoms
+                // to the new height (whether it's filled with water or a new
+                // left-wall has taken over tracking water at that level).
+                let mut water_collected = 0;
+
+                // Also try specifying the size of the vec.
+                acc.walls.retain_mut(|left_wall| {
+                    // Collect the water only for those left edges whose bottom extends to
+                    // the heigth of this new wall.
+                    //   |nn
+                    //   ||y|
+                    if left_wall.bottom < *height {
+                        water_collected += (left_wall.height.min(*height) - left_wall.bottom)
+                            * ((pos as i32 - 1) - left_wall.pos);
+                        // println!("water collected after
+                        // {left_wall:?}: {water_collected}");
                     }
 
-                    // Next, sum the water collected by this current
-                    // wall (if any), raising the existing left-wall bottoms
-                    // to the new height (whether it's filled with water or a new
-                    // left-wall has taken over tracking water at that level).
-                    let mut water_collected = 0;
-                    let mut new_walls: Vec<LeftWall> = acc
-                        .walls
-                        .iter()
-                        .filter_map(|left_wall| {
-                            // Collect the water only for those left edges whose bottom extends to
-                            // the heigth of this new wall.
-                            //   |nn
-                            //   ||y|
-                            if left_wall.bottom < *height {
-                                water_collected += (left_wall.height.min(*height)
-                                    - left_wall.bottom)
-                                    * ((pos as i32 - 1) - left_wall.pos);
-                                // println!("water collected after
-                                // {left_wall:?}: {water_collected}");
-                            }
-
-                            if left_wall.height <= *height {
-                                // If the left-wall was equal or less in height to the current one,
-                                // we filter it out by returning
-                                // None for the filter_map result.
-                                return None;
-                            }
-
-                            // Otherwise we leave the left wall in our walls, but adjust its bottom
-                            // to the height of this new wall if it is higher than the current
-                            // bottem, since the new wall will track the
-                            // trapped water to that level.
-                            Some(LeftWall {
-                                pos: left_wall.pos,
-                                height: left_wall.height,
-                                bottom: left_wall.bottom.max(*height),
-                            })
-                        })
-                        .collect();
-
-                    // Finally add the new left wall.
-                    new_walls.push(LeftWall {
-                        pos: pos as i32,
-                        height: *height,
-                        bottom: 0,
-                    });
-
-                    Accumulator {
-                        water: acc.water + water_collected,
-                        walls: new_walls,
+                    if left_wall.height <= *height {
+                        // If the left-wall was equal or less in height to the current one,
+                        // we filter it out by returning
+                        // None for the filter_map result.
+                        false
+                    } else {
+                        // Otherwise we leave the left wall in our walls, but adjust its bottom
+                        // to the height of this new wall if it is higher than the current
+                        // bottom, since the new wall will track the
+                        // trapped water to that level.
+                        left_wall.bottom = left_wall.bottom.max(*height);
+                        true
                     }
                 });
+                // Finally add the new left wall.
+                acc.walls.push(LeftWall {
+                    pos: pos as i32,
+                    height: *height,
+                    bottom: 0,
+                });
+
+                acc
+            },
+        );
         accumulated.water
     }
 }
