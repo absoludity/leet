@@ -77,6 +77,8 @@ impl Solution {
                         true
                     }
                 });
+
+                acc.water += water_collected;
                 // Finally add the new left wall.
                 acc.walls.push(LeftWall {
                     pos: pos as i32,
@@ -88,5 +90,17 @@ impl Solution {
             },
         );
         accumulated.water
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_case::test_case;
+
+    #[test_case(vec![0,1,0,2,1,0,1,3,2,1,2,1], 6; "Test case 1")]
+    #[test_case(vec![4,2,0,3,2,5], 9; "Test case 2")]
+    fn test_trap(heights: Vec<i32>, trapped_water: i32) {
+        assert_eq!(Solution::trap(&heights), trapped_water);
     }
 }

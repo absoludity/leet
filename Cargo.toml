@@ -9,9 +9,14 @@ edition = "2021"
 
 [dev-dependencies]
 criterion = { version = "0.4", features = ["html_reports"] }
+test-case = "3.3.1"
 
 [[bench]]
 name = "trapping_rain_water"
+harness = false
+
+[[bench]]
+name = "trapping_rain_water_v2"
 harness = false
 
 [profile.release]
